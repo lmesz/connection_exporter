@@ -10,7 +10,7 @@
   It means there are 1 established connection towards 58112 which is in ESTABLISHED state and there is 1 connection towards 8080 which is in TIME_WAIT state.
 
 # ToDo
-[] tests
-[] debug log
-[] extract Collect to separate functions
-[] better naming of variables
+- [ ] tests
+- [ ] debug log
+- [ ] extract Collect to separate functions
+- [ ] better naming of variables
