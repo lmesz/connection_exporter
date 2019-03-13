@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"os/exec"
 	"regexp"
@@ -9,11 +10,19 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/prometheus/common/version"
+	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 var (
 	//tcp        0      0 127.0.0.1:44076         127.0.0.1:1445          TIME_WAIT   -
-	pattern = regexp.MustCompile(`(tcp|tcp6)\s+\d+\s+\d+\s+\d+.\d+.\d+.\d+.\d+:(\d+)\s+\d+.\d+.\d+.\d+.\d+:(\d+)\s+(\w+)`)
+	pattern     = regexp.MustCompile(`(tcp|tcp6)\s+\d+\s+\d+\s+\d+.\d+.\d+.\d+.\d+:(\d+)\s+\d+.\d+.\d+.\d+.\d+:(\d+)\s+(\w+)`)
+	defaultPort = "9911"
+	desc        = fmt.Sprintf("Port on which exporter should listen. Default: %s", defaultPort)
+	port        = kingpin.Flag(
+		"config.port",
+		desc,
+	).Default(defaultPort).String()
 )
 
 type connectionCollector struct {
@@ -70,8 +79,14 @@ func (collector *connectionCollector) Collect(ch chan<- prometheus.Metric) {
 }
 
 func main() {
+	kingpin.Version(version.Print("syslog_ng_exporter"))
+	kingpin.HelpFlag.Short('h')
+	kingpin.Parse()
+
+	listenPort := fmt.Sprintf(":%s", *port)
+
 	prometheus.MustRegister(newConnectionCollector())
 	http.Handle("/metrics", promhttp.Handler())
-	log.Info("Beginning to serve on port :8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Info("Beginning to serve on port ", listenPort)
+	log.Fatal(http.ListenAndServe(listenPort, nil))
 }
