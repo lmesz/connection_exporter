@@ -1,4 +1,4 @@
-***Connection exporter
+# Connection exporter
 
 * The aim of this small exporter is to collect socket statistics based on the outgoing port.
 
