@@ -65,25 +65,25 @@ func (collector *connectionCollector) Collect(ch chan<- prometheus.Metric) {
 	splittedResult := strings.Split(string(out), "\n")
 
 	for i := range splittedResult {
-
 		line := splittedResult[i]
 		if pattern.MatchString(line) {
 			f := pattern.FindStringSubmatch(line)
-			if stringInSlice(f[3], strings.Split(*portsToWatch, ",")) {
-				if _, ok := result[f[3]]; ok {
-					if _, ok := result[f[3]][f[4]]; ok {
-						result[f[3]][f[4]] = result[f[3]][f[4]] + 1
+			destination_port := f[3]
+			state := f[4]
+			if stringInSlice(destination_port, strings.Split(*portsToWatch, ",")) {
+				if _, ok := result[destination_port]; ok {
+					if _, ok := result[destination_port][state]; ok {
+						result[destination_port][state] = result[destination_port][state] + 1
 					} else {
-						result[f[3]] = map[string]float64{}
-						result[f[3]][f[4]] = 1
+						result[destination_port] = map[string]float64{}
+						result[destination_port][state] = 1
 					}
 				} else {
-					result[f[3]] = map[string]float64{}
-					result[f[3]][f[4]] = 1
+					result[destination_port] = map[string]float64{}
+					result[destination_port][state] = 1
 				}
 			}
 		}
-
 	}
 
 	for source := range result {
