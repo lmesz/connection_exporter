@@ -56,7 +56,25 @@ func (collector *connectionCollector) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (collector *connectionCollector) Collect(ch chan<- prometheus.Metric) {
-	var result = make(map[string]map[string]float64)
+	ports := strings.Split(*portsToWatch, ",")
+	result := make(map[string]map[string]float64, len(ports))
+
+	for port := range ports {
+		result[ports[port]] = map[string]float64{
+			"ESTABLISHED": 0.0,
+			"SYN_SENT":    0.0,
+			"SYN_RECV":    0.0,
+			"FIN_WAIT1":   0.0,
+			"FIN_WAIT2":   0.0,
+			"TIME_WAIT":   0.0,
+			"CLOSED":      0.0,
+			"CLOSE_WAIT":  0.0,
+			"LAST_ACK":    0.0,
+			"LISTEN":      0.0,
+			"CLOSING":     0.0,
+			"UNKNOWN":     0.0,
+		}
+	}
 	out, err := exec.Command("netstat", "-plantu").Output()
 	if err != nil {
 		log.Fatal(err)
@@ -71,17 +89,7 @@ func (collector *connectionCollector) Collect(ch chan<- prometheus.Metric) {
 			destination_port := f[3]
 			state := f[4]
 			if stringInSlice(destination_port, strings.Split(*portsToWatch, ",")) {
-				if _, ok := result[destination_port]; ok {
-					if _, ok := result[destination_port][state]; ok {
-						result[destination_port][state] = result[destination_port][state] + 1
-					} else {
-						result[destination_port] = map[string]float64{}
-						result[destination_port][state] = 1
-					}
-				} else {
-					result[destination_port] = map[string]float64{}
-					result[destination_port][state] = 1
-				}
+				result[destination_port][state]++
 			}
 		}
 	}
