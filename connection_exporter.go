@@ -14,7 +14,7 @@ import (
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
-func stringInSlice(a string, list []string) bool {
+func StringInSlice(a string, list []string) bool {
 	for _, b := range list {
 		if b == a {
 			return true
@@ -88,7 +88,7 @@ func (collector *connectionCollector) Collect(ch chan<- prometheus.Metric) {
 			f := pattern.FindStringSubmatch(line)
 			destination_port := f[3]
 			state := f[4]
-			if stringInSlice(destination_port, strings.Split(*portsToWatch, ",")) {
+			if StringInSlice(destination_port, strings.Split(*portsToWatch, ",")) {
 				result[destination_port][state]++
 			}
 		}
