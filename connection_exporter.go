@@ -55,7 +55,15 @@ func (collector *connectionCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- collector.connectionMetric
 }
 
-func (collector *connectionCollector) Collect(ch chan<- prometheus.Metric) {
+func getNetstatsResult() []string {
+	out, err := exec.Command("netstat", "-plantu").Output()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return strings.Split(string(out), "\n")
+}
+
+func parseNetstatsResult(data []string) map[string]map[string]float64 {
 	ports := strings.Split(*portsToWatch, ",")
 	result := make(map[string]map[string]float64, len(ports))
 
@@ -75,25 +83,24 @@ func (collector *connectionCollector) Collect(ch chan<- prometheus.Metric) {
 			"UNKNOWN":     0.0,
 		}
 	}
-	out, err := exec.Command("netstat", "-plantu").Output()
-	if err != nil {
-		log.Fatal(err)
-	}
 
-	splittedResult := strings.Split(string(out), "\n")
-
-	for i := range splittedResult {
-		line := splittedResult[i]
+	for i := range data {
+		line := data[i]
 		if pattern.MatchString(line) {
 			f := pattern.FindStringSubmatch(line)
-			destination_port := f[3]
+			destinationPort := f[3]
 			state := f[4]
-			if StringInSlice(destination_port, strings.Split(*portsToWatch, ",")) {
-				result[destination_port][state]++
+			if StringInSlice(destinationPort, strings.Split(*portsToWatch, ",")) {
+				result[destinationPort][state]++
 			}
 		}
 	}
 
+	return result
+}
+
+func (collector *connectionCollector) Collect(ch chan<- prometheus.Metric) {
+	result := parseNetstatsResult(getNetstatsResult())
 	for source := range result {
 		for state := range result[source] {
 			ch <- prometheus.MustNewConstMetric(collector.connectionMetric, prometheus.CounterValue, result[source][state], source, state)
