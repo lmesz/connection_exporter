@@ -24,8 +24,6 @@ func StringInSlice(a string, list []string) bool {
 }
 
 var (
-	//tcp        0      0 127.0.0.1:44076         127.0.0.1:1445          TIME_WAIT   -
-	pattern      = regexp.MustCompile(`(tcp|tcp6)\s+\d+\s+\d+\s+\d+.\d+.\d+.\d+.\d+:(\d+)\s+\d+.\d+.\d+.\d+.\d+:(\d+)\s+(\w+)`)
 	defaultPort  = "9911"
 	desc         = fmt.Sprintf("Port on which exporter should listen. Default: %s", defaultPort)
 	portToListen = kingpin.Flag(
@@ -63,7 +61,10 @@ func getNetstatsResult() []string {
 	return strings.Split(string(out), "\n")
 }
 
-func parseNetstatsResult(data []string) map[string]map[string]float64 {
+func ParseNetstatsResult(data []string) map[string]map[string]float64 {
+	//tcp        0      0 127.0.0.1:44076         127.0.0.1:1445          TIME_WAIT   -
+	pattern := regexp.MustCompile(`(tcp|tcp6)\s+\d+\s+\d+\s+\d+.\d+.\d+.\d+.\d+:(\d+)\s+\d+.\d+.\d+.\d+.\d+:(\d+)\s+(\w+)`)
+
 	ports := strings.Split(*portsToWatch, ",")
 	result := make(map[string]map[string]float64, len(ports))
 
@@ -100,7 +101,7 @@ func parseNetstatsResult(data []string) map[string]map[string]float64 {
 }
 
 func (collector *connectionCollector) Collect(ch chan<- prometheus.Metric) {
-	result := parseNetstatsResult(getNetstatsResult())
+	result := ParseNetstatsResult(getNetstatsResult())
 	for source := range result {
 		for state := range result[source] {
 			ch <- prometheus.MustNewConstMetric(collector.connectionMetric, prometheus.CounterValue, result[source][state], source, state)
